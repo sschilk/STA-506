@@ -1,0 +1,443 @@
+---
+title: "Assignment 8: Bootstrap Methods and Applications"
+author: "Sean Schilk"
+date: "3/31/26"
+output:
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: no
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    highlight: monochrome
+    theme: spacelab
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: yes
+    fig_width: 3
+    fig_height: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{css, echo = FALSE}
+#TOC::before {
+  content: "Table of Contents";
+  font-weight: bold;
+  font-size: 1.2em;
+  display: block;
+  color: navy;
+  margin-bottom: 10px;
+}
+
+
+div#TOC li {     /* table of content  */
+    list-style:upper-roman;
+    background-image:none;
+    background-repeat:none;
+    background-position:0;
+}
+
+h1.title {    /* level 1 header of title  */
+  font-size: 22px;
+  font-weight: bold;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+}
+
+h4.author { /* Header 4 - and the author and data headers use this too  */
+  font-size: 15px;
+  font-weight: bold;
+  font-family: system-ui;
+  color: navy;
+  text-align: center;
+}
+
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  font-weight: bold;
+  font-family: "Gill Sans", sans-serif;
+  color: DarkBlue;
+  text-align: center;
+}
+
+h1 { /* Header 1 - and the author and data headers use this too  */
+    font-size: 20px;
+    font-weight: bold;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: center;
+}
+
+h2 { /* Header 2 - and the author and data headers use this too  */
+    font-size: 18px;
+    font-weight: bold;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+}
+
+h3 { /* Header 3 - and the author and data headers use this too  */
+    font-size: 16px;
+    font-weight: bold;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+}
+
+h4 { /* Header 4 - and the author and data headers use this too  */
+    font-size: 14px;
+  font-weight: bold;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+/* Add dots after numbered headers */
+.header-section-number::after {
+  content: ".";
+
+body {background-color: #ffffff;
+      color: #000000;
+      font-family: Arial, sans-serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+}
+```
+
+```{r setup, include=FALSE}
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("pander")) {
+   install.packages("pander")
+   library(pander)
+}
+if (!require("ggplot2")) {
+  install.packages("ggplot2")
+  library(ggplot2)
+}
+if (!require("tidyverse")) {
+  install.packages("tidyverse")
+  library(tidyverse)
+}
+
+if (!require("plotly")) {
+  install.packages("plotly")
+  library(plotly)
+}
+
+if (!require("VGAM")) {
+  install.packages("VGAM")
+  library(VGAM)
+}
+if (!require("boot")) {
+  install.packages("boot")
+  library(boot)
+}
+
+
+
+
+
+
+#### VGAM
+knitr::opts_chunk$set(echo = TRUE,       # include code chunk in the output file
+                      warning = FALSE,   # sometimes, you code may produce warning messages,
+                                         # you can choose to include the warning messages in
+                                         # the output file. 
+                      results = TRUE,    # you can also decide whether to include the output
+                                         # in the output file.
+                      message = FALSE,
+                      comment = NA
+                      )  
+```
+ 
+ \
+
+<p>**Log-normal Distribution Revisited**</p>
+
+<p>
+If $Y = \ln(X) \sim N(\mu, \sigma^2)$, then $X$ follows a lognormal distribution $X \sim \text{Lognormal}(\mu, \sigma^2)$. The probability density is given by
+
+$$
+f(x|\mu,\sigma) = \frac{1}{x\sigma\sqrt{2\pi}} \exp\left(-\frac{(\ln x - \mu)^2}{2\sigma^2}\right), \quad x > 0
+$$
+
+After some algebra, we can express the mean and variance of the above lognormal distribution in the following
+
+
+\begin{align}
+\mathbb{E}[X] &= \exp\left(\mu + \frac{\sigma^2}{2}\right) \\
+\text{Var}(X) &= [\exp(\sigma^2) - 1] \exp(2\mu + \sigma^2)
+\end{align}
+
+
+Using the relationship between normal and log-normal distribution and a sample $\{x_1, x_2, \dots, x_n\}$, the MLE estimators of $\mu$ and $\sigma^2$ are given by
+
+
+\begin{align}
+\hat{\mu} &= \frac{1}{n}\sum_{i=1}^n \ln(x_i) \\
+\hat{\sigma}^2 &= \frac{1}{n}\sum_{i=1}^n (\ln(x_i) - \hat{\mu})^2
+\end{align}
+
+
+Using the plug-in principle of MLE, we have the MLE of $\mathbb{E}[X]$ and $\text{Var}(X)$ in the following
+
+$$
+\boxed{\widehat{\mathbb{E}[X]} = \exp\left(\hat{\mu} + \frac{\hat{\sigma}^2}{2}\right)}
+$$
+
+</P>
+
+
+
+<p><font color = "blue">**This assignment focuses on constructing various bootstrap confidence intervals of the lognormal population mean $\mathbb{E}[X]$**</font></p>
+
+
+\
+
+## **Question: Trace Metal Concentrations in Soil**
+
+<p>
+Soil lead (Pb) concentrations (mg/kg) from 55 urban garden sites. Trace metals in environmental media typically follow lognormal distributions due to:
+
+* Multiplicative processes controlling accumulation
+
+* Positive constraints (concentrations cannot be negative)
+
+* Right-skewed nature of contamination patterns
+</p>
+
+
+
+<p>
+```{r}
+data <- c(0.85, 1.23, 0.92, 3.45, 2.11, 1.56, 4.89, 2.34, 1.78, 6.72, 0.95, 1.34, 8.91, 
+2.67, 1.89, 5.43, 1.12, 3.78, 2.45, 7.65, 1.05, 1.45, 12.34, 2.89, 2.01, 4.56, 
+1.23, 4.32, 2.67, 9.87, 0.99, 1.56, 15.23, 3.12, 2.34, 3.89, 1.34, 5.67, 2.89, 
+11.45, 1.12, 1.67, 18.90, 3.45, 2.56, 3.45, 1.45, 6.78, 3.12, 14.56, 1.23, 1.78, 
+22.34, 3.78, 2.78)
+```
+</p>
+
+<p>
+
+$$\boxed{\text{Instructions:}}$$
+
+Assume the data follow a log-normal distribution. For each question in parts (b)–(d), begin by clearly explaining the reasoning behind your analytical approach. Then, develop your own R functions to implement three types of confidence intervals: the asymptotic interval, the percentile bootstrap interval, and the bias-corrected and accelerated (BCa) bootstrap interval. Use these functions to construct the required confidence intervals, and verify your results using the appropriate functions from the `boot` package.
+
+You are encouraged to design a wrapper function that integrates all confidence interval methods, allowing users to select the desired method through an input argument.
+</P>
+
+<p>
+
+$$\boxed{\text{Individual Questions:}}$$
+
+a). Perform 5000 bootstrap samples to estimate the bootstrap sampling distribution of $\boxed{\widehat{\mathbb{E}[X]}}$. Display the distribution using either a histogram or a kernel density plot. Comment on the shape, variability, and any notable patterns observed in the bootstrap sampling distribution.
+
+```{r}
+set.seed(1)
+B <- 5000
+n <- length(data)
+boot_means <- numeric(B)     # empty vector to store bootstrap sample means
+
+for(b in 1:B) {
+  boot_sample <- sample(data, n, replace=TRUE)  # generating bootstrap sample
+  boot_means[b] <- mean(boot_sample)            # calculate bootstrap means
+}
+hist(boot_means,                           # data used for histogram
+     probability = TRUE,                       # relative frequency
+     breaks = 14,                               # specify number of vertical bars
+     xlab = "sample means of repeated samples", # change the label of x-axis
+     # add a title to the histogram
+     main="Approximated Sampling Distribution  \n  of Sample Means",
+     cex.main = 0.9,
+     col.main = "navy")   
+lines(density(boot_means), col = "skyblue", lwd = 2)
+
+```
+
+The shape roughly follows a bell curve, with perhaps slight right skew. There is moderate variability found in the sampling distribution of E(x), being .618. The histogram also shows 2 peaks, meaning the data is slightly bimodal.
+
+b). Construct a 95% bootstrap percentile confidence interval for $\mu_{LN} = \mathbb{E}[X]$.
+
+First, to get the bootstrap distribution, I resample 5000 times with replacement, then take the mean of each resample. Sorting gives the sampling distribution of our sample means in smallest to largest. Taking the lower bound would be the cut off of the smallest 2,5% of our bootstrap means. We do the same for the upper bound. 
+
+```{r}
+set.seed(1)
+# my function
+percentile_ci <- function(data, statistic, B = 5000, alpha = 0.05) {
+  
+  # Bootstrap distribution
+  n <- length(data)
+  boot_means <- numeric(B)
+  for(b in 1:B) {
+    boot_sample <- sample(data, n, replace = TRUE)
+    boot_means[b] <- statistic(boot_sample)
+  }
+  
+  # Sorted bootstrap distribution
+  sorted_boot <- sort(boot_means)
+  
+  # Find indices
+  lower_idx <- floor(B * alpha / 2)
+  upper_idx <- ceiling(B * (1 - alpha / 2))
+  
+  # Extract bounds
+  lower <- sorted_boot[lower_idx]
+  upper <- sorted_boot[upper_idx]
+  
+  return(c(lower, upper))
+}
+
+ci <- percentile_ci(data, statistic = mean, B = 5000, alpha = 0.05)
+cat("95% Percentile CI: [", round(ci[1], 3), ",", round(ci[2], 3), "]\n")
+
+
+
+# Now using boot package
+set.seed(1)
+mean_stat <- function(data, indices) {
+  sample_data <- data[indices]
+  return(mean(sample_data))
+}
+
+# Perform bootstrap
+boot_result <- boot(data, mean_stat, R=5000)
+
+# Percentile CI
+boot.ci(boot_result, type="perc")
+```
+
+c). Construct a 95% bootstrap BCa confidence interval for $\mu_{LN} = \mathbb{E}[X]$.
+
+After resampling to get our bootstrap distribution, we do a bias correction, then compute $\hat{a}$ using a jackknife algorithm, then take the adjusted percentiles to find the confidence interval. 
+
+```{r}
+set.seed(1)
+bca_ci <- function(data, statistic, B = 5000, alpha = 0.05) {
+  
+  # Bootstrap distribution
+  n <- length(data)
+  theta_hat <- statistic(data)
+  boot_means <- numeric(B)
+  for(b in 1:B) {
+    boot_sample <- sample(data, n, replace = TRUE)
+    boot_means[b] <- statistic(boot_sample)
+  }
+  
+  # Bias correction
+  prop_less <- sum(boot_means < theta_hat) / B
+  z0 <- qnorm(prop_less)
+  
+  # Acceleration (jackknife)
+  jack_vals <- numeric(n)
+  for(i in 1:n) {
+    jack_sample <- data[-i]
+    jack_vals[i] <- statistic(jack_sample)
+  }
+  theta_jack_mean <- mean(jack_vals)
+  numerator <- sum((theta_jack_mean - jack_vals)^3)
+  denominator <- sum((theta_jack_mean - jack_vals)^2)
+  a_hat <- numerator / (6 * denominator^(3/2))
+  
+  # Adjusted percentiles
+  z_alpha <- qnorm(alpha / 2)
+  z_1alpha <- qnorm(1 - alpha / 2)
+  alpha1 <- pnorm(z0 + (z0 + z_alpha) / (1 - a_hat * (z0 + z_alpha)))
+  alpha2 <- pnorm(z0 + (z0 + z_1alpha) / (1 - a_hat * (z0 + z_1alpha)))
+  
+  # Extract bounds
+  sorted_boot <- sort(boot_means)
+  lower <- quantile(sorted_boot, probs = alpha1)
+  upper <- quantile(sorted_boot, probs = alpha2)
+
+  return(c(lower, upper))
+}
+ci <- bca_ci(data, statistic = mean, B = 5000, alpha = 0.05)
+cat("95% BCa CI: [", round(ci[1], 3), ",", round(ci[2], 3), "]\n")
+
+# Now using boot package
+set.seed(1)
+mean_statTwo <- function(data, indices) {
+  sample_data <- data[indices]
+  return(mean(sample_data))
+}
+
+# Perform bootstrap
+boot_result <- boot(data, mean_statTwo, R=5000)
+
+# BCa CI
+bca_ci <- boot.ci(boot_result, type="bca")
+bca_ci
+```
+
+d). Use the Central Limit Theorem to construct a 95% asymptotic confidence interval for $\mu_{LN} = \mathbb{E}[X]$.
+
+I will be using sample mean, standard errors, sample size, with the CLT, of our given dataset to construct the 95% asymptotic CI for $\mu_{LN} = \mathbb{E}[X]$.
+
+```{r}
+set.seed(1)
+asymptotic_ci <- function(data, alpha = 0.05) {
+  xbar <- mean(data) # sample mean
+  n <- length(data) # sample sdize
+  std_err <- sd(data) / sqrt(n) # standard errors
+  
+  # CI bounds
+  ci.low <- xbar - qnorm(1 - alpha / 2) * std_err
+  ci.up  <- xbar + qnorm(1 - alpha / 2) * std_err
+  
+  return(c(ci.low, ci.up))
+}
+
+ci <- asymptotic_ci(data, alpha = 0.05)
+cat("95% Asymptotic CI: [", round(ci[1], 3), ",", round(ci[2], 3), "]\n")
+```
+
+f). Assuming the confidence intervals constructed in the previous parts are valid, evaluate their performance by comparing their widths, symmetry, stability, and sensitivity to distributional skewness. Then, provide a well‑reasoned recommendation regarding which method is most suitable for this analysis.
+</p>
+
+```{r}
+# CI widths
+boot.ci(boot_result, type="perc")
+bca_ci
+cat("95% Asymptotic CI: [", round(ci.low, 3), ",", round(ci.up, 3), "]\n")
+
+# symmetry (distance from sample mean)
+xbar <- mean(data)
+
+# Percentile
+perc_low <- xbar - 3.243
+perc_up  <- 5.730 - xbar
+# BCa
+bca_low <- xbar - 3.391
+bca_up  <- 5.991 - xbar
+# Asymptotic
+asy_low <- xbar - 3.164
+asy_up  <- 5.632 - xbar
+```
+
+Let's start by  first looking at the widths. The asymptotic CI is the narrowest, with 2.468, then percentile = 2.487, then BCa =2.6. The asymptotic CI has perfect symmetry, with equal distances of 1.234 on both sides of the sample mean. Then percentile follows behind with the distance above, 1.332 slightly larger than below, 1.155. Finally, BCa comes last with 1.593 as its upper and 1.007 lower. Stability refers to how much the CI will vary from taking multiple bootstrap samples. After manually removing the set.seed() function, I found percentile CI to be the most stable option, then BCa. Regarding the given distributional skewness, as the data is lognormally distributed, I would recommend BCa, as it specifically account for both bias and skewness in the data. In conclusion, BCa would be my practical recommendation given this data, but with more symmetric data I would recommend the percentile bootstrap CI method. 
+
+
